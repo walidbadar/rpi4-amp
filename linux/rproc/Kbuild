@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
+# SPDX-License-Identifier: GPL-2.0-only
+
+# The Raspberry Pi OS kernel has no virtio, rpmsg or remoteproc: build them
+# from the matching kernel sources (get-sources.sh) as external modules.
+# Without these defines the headers replace the rpmsg API with stubs.
+ccflags-y += -DCONFIG_RPMSG_MODULE=1 -DCONFIG_RPMSG_CHAR_MODULE=1 -DCONFIG_VIRTIO_ANCHOR
+
+# virtio_anchor is built-in when the kernel has virtio
+obj-m += virtio_core.o virtio_ring.o
+virtio_core-y := virtio.o virtio_anchor.o
+obj-m += rpmsg_core.o rpmsg_ns.o rpmsg_char.o rpmsg_ctrl.o virtio_rpmsg_bus.o
+obj-m += rpmsg_client_sample.o rpmsg_tty.o
+# Upstream links the virtio half into the built-in core; as modules each
+# half has its own module_init
+obj-m += remoteproc.o rproc_virtio.o
+remoteproc-y := remoteproc_core.o remoteproc_coredump.o remoteproc_debugfs.o \
+		remoteproc_sysfs.o remoteproc_elf_loader.o remoteproc_core_exports.o
+rproc_virtio-y := remoteproc_virtio.o remoteproc_virtio_module.o
+# Not exported to modules: see remoteproc_virtio_module.c
+CFLAGS_remoteproc_virtio.o += \
+	-Ddma_declare_coherent_memory=rproc_virtio_declare_coherent_memory \
+	-Ddma_release_coherent_memory=rproc_virtio_release_coherent_memory
+obj-m += rpi4_amp_rproc.o

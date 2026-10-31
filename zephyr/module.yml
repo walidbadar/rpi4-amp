@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
+# SPDX-License-Identifier: Apache-2.0
+
+name: rpi4-amp
+build:
+  cmake: zephyr
+  kconfig: zephyr/Kconfig
+  settings:
+    module_ext_root: .

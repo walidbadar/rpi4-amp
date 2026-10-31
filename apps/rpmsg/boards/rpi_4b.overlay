@@ -1,0 +1,38 @@
+/*
+ * SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm64.h>
+#include "../../../common/rpi_4b_amp.dtsi"
+
+/ {
+	chosen {
+		zephyr,ipc_shm = &amp_ipc_shm;
+		zephyr,ipc = &amp_ipm;
+	};
+
+	amp_doorbell: mbox {
+		compatible = "zephyr,mbox-gic-sw";
+		interrupts = <GIC_SPI 220 IRQ_TYPE_EDGE IRQ_DEFAULT_PRIORITY>;
+		tx-spis = <221>;
+		#mbox-cells = <1>;
+	};
+
+	amp_ipm: ipm {
+		compatible = "zephyr,mbox-ipm";
+		mboxes = <&amp_doorbell 0>, <&amp_doorbell 0>;
+		mbox-names = "tx", "rx";
+	};
+
+	amp_ipc_shm: memory@30900000 {
+		compatible = "zephyr,memory-region";
+		reg = <0x30900000 DT_SIZE_M(1)>;
+		zephyr,memory-region = "IPC_SHM";
+		zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
+	};
+};
+
+&amp_ram_console {
+	zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
+};

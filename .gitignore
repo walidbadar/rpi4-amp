@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
+# SPDX-License-Identifier: Apache-2.0
+
+build*/
+boot.scr
+
+# Kernel sources copied by linux/rproc/get-sources.sh
+linux/rproc/virtio.c
+linux/rproc/virtio_anchor.c
+linux/rproc/virtio_ring.c
+linux/rproc/rpmsg_*.c
+linux/rproc/rpmsg_*.h
+linux/rproc/virtio_rpmsg_bus.c
+linux/rproc/remoteproc_*.h
+linux/rproc/remoteproc_core.c
+linux/rproc/remoteproc_coredump.c
+linux/rproc/remoteproc_debugfs.c
+linux/rproc/remoteproc_elf_loader.c
+linux/rproc/remoteproc_sysfs.c
+linux/rproc/remoteproc_virtio.c
+
+# Kernel module build output
+*.o
+*.ko
+*.mod
+*.mod.c
+.*.cmd
+Module.symvers
+modules.order
