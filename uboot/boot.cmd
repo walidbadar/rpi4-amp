@@ -27,12 +27,12 @@ fdt set /reserved-memory/vdev0buffer@30910000 reg <0x0 0x30910000 0x000f0000>
 fdt set /reserved-memory/vdev0buffer@30910000 no-map
 fdt set /reserved-memory/vdev0buffer@30910000 phandle <0x7a6d0001>
 
-# For the rpi4_amp_rproc remoteproc driver: rpmsg buffer pool and the SPI
-# the remote CPU sets pending for Linux
+# For the rpi4_amp_rproc remoteproc driver: rpmsg buffer pool, the SPI the
+# remote CPU sets pending for Linux and the SPI Linux sets pending for it
 fdt mknode / zephyr-amp
 fdt set /zephyr-amp compatible "rpi4-amp,zephyr"
 fdt set /zephyr-amp memory-region <0x7a6d0001>
-fdt set /zephyr-amp interrupts <0 221 1>
+fdt set /zephyr-amp interrupts <0 221 1 0 220 1>
 fdt get value amp_args /chosen bootargs
 setenv bootargs "${amp_args} nr_cpus=3 ${amp_extra_args}"
 

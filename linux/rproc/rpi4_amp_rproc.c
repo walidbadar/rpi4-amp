@@ -8,9 +8,9 @@
  * must be a no-map reserved-memory region. The CPU is started through its
  * spin-table release address and cannot be stopped again.
  *
- * Notifications are two GIC SPIs that no device drives: kick_spi is set
- * pending for the remote CPU, the remote CPU sets the SPI in the node's
- * "interrupts" pending for Linux.
+ * Notifications are two GIC SPIs that no device drives, both in the node's
+ * "interrupts": the remote CPU sets the first pending for Linux, Linux sets
+ * the second pending for the remote CPU.
  *
  * Memory layout from base, matching the Zephyr devicetree:
  *   +0x000000  9 MiB   image, RAM and console
@@ -25,6 +25,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/irq.h>
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -42,8 +43,6 @@
 #define AMP_BUFFER_SIZE		(SZ_1M - 2 * AMP_VRING_SIZE)
 #define AMP_MAPPED_SIZE		(AMP_IMAGE_SIZE + 2 * AMP_VRING_SIZE)
 
-#define GIC_SPI_INTID_BASE	32
-#define GICD_ISPENDR		0x200
 #define GICD_ITARGETSR		0x800
 
 static ulong base = 0x30000000;
@@ -58,12 +57,9 @@ static char *firmware = "zephyr-amp.elf";
 module_param(firmware, charp, 0444);
 MODULE_PARM_DESC(firmware, "Default ELF image in the firmware search path");
 
-static uint kick_spi = 220;
-module_param(kick_spi, uint, 0444);
-MODULE_PARM_DESC(kick_spi, "SPI set pending to notify the remote CPU");
-
 struct amp_rproc {
 	void __iomem *gicd;
+	int kick_irq;
 	u64 release_addr;
 };
 
@@ -183,6 +179,7 @@ static int amp_prepare(struct rproc *rproc)
 static int amp_start(struct rproc *rproc)
 {
 	struct amp_rproc *amp = rproc->priv;
+	irq_hw_number_t kick_intid;
 	u64 *slot;
 	int ret = 0;
 
@@ -201,7 +198,8 @@ static int amp_start(struct rproc *rproc)
 	 * itself: deliver the kick to the remote CPU alone. GIC CPU interface n
 	 * is core n on the BCM2711.
 	 */
-	writeb(BIT(hwid), amp->gicd + GICD_ITARGETSR + kick_spi + GIC_SPI_INTID_BASE);
+	kick_intid = irqd_to_hwirq(irq_get_irq_data(amp->kick_irq));
+	writeb(BIT(hwid), amp->gicd + GICD_ITARGETSR + kick_intid);
 
 	/* Image and resource table in memory before the CPU leaves its wfe loop */
 	mb();
@@ -226,9 +224,8 @@ static int amp_stop(struct rproc *rproc)
 static void amp_kick(struct rproc *rproc, int vqid)
 {
 	struct amp_rproc *amp = rproc->priv;
-	u32 intid = kick_spi + GIC_SPI_INTID_BASE;
 
-	writel(BIT(intid % 32), amp->gicd + GICD_ISPENDR + (intid / 32) * 4);
+	irq_set_irqchip_state(amp->kick_irq, IRQCHIP_STATE_PENDING, true);
 }
 
 static const struct rproc_ops amp_rproc_ops = {
@@ -298,6 +295,12 @@ static int amp_probe(struct platform_device *pdev)
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		ret = irq;
+		goto put;
+	}
+
+	amp->kick_irq = platform_get_irq(pdev, 1);
+	if (amp->kick_irq < 0) {
+		ret = amp->kick_irq;
 		goto put;
 	}
 
