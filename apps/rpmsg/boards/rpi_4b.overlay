@@ -4,12 +4,38 @@
  */
 
 #include <zephyr/dt-bindings/memory-attr/memory-attr-arm64.h>
-#include "../../../common/rpi_4b_amp.dtsi"
 
 / {
 	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,entropy;
+		/delete-property/ zephyr,display;
+		/delete-property/ zephyr,pcie-controller;
+		zephyr,sram = &amp_sram;
+		zephyr,ram-console = &amp_ram_console;
 		zephyr,ipc_shm = &amp_ipc_shm;
 		zephyr,ipc = &amp_ipm;
+	};
+
+	amp_sram: memory@30000000 {
+		compatible = "mmio-sram";
+		reg = <0x30000000 DT_SIZE_M(8)>;
+		device_type = "memory";
+	};
+
+	amp_ram_console: memory@30800000 {
+		compatible = "zephyr,memory-region";
+		reg = <0x30800000 DT_SIZE_K(64)>;
+		zephyr,memory-region = "RAM_CONSOLE";
+		zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
+	};
+
+	amp_ipc_shm: memory@30900000 {
+		compatible = "zephyr,memory-region";
+		reg = <0x30900000 DT_SIZE_M(1)>;
+		zephyr,memory-region = "IPC_SHM";
+		zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
 	};
 
 	amp_doorbell: mbox {
@@ -24,15 +50,58 @@
 		mboxes = <&amp_doorbell 0>, <&amp_doorbell 0>;
 		mbox-names = "tx", "rx";
 	};
-
-	amp_ipc_shm: memory@30900000 {
-		compatible = "zephyr,memory-region";
-		reg = <0x30900000 DT_SIZE_M(1)>;
-		zephyr,memory-region = "IPC_SHM";
-		zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
-	};
 };
 
-&amp_ram_console {
-	zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
+/delete-node/ &dram0;
+
+&rng {
+	status = "disabled";
+};
+
+&mbox0 {
+	status = "disabled";
+};
+
+&rpi_fw {
+	status = "disabled";
+};
+
+&exp_gpio {
+	status = "disabled";
+};
+
+&vc_thermal {
+	status = "disabled";
+};
+
+&fb0 {
+	status = "disabled";
+};
+
+&usb_hcd {
+	status = "disabled";
+};
+
+&gpio1 {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&i2c1 {
+	status = "disabled";
+};
+
+&eth0 {
+	status = "disabled";
+};
+
+&mdio0 {
+	status = "disabled";
+};
+
+&usb0 {
+	status = "disabled";
 };

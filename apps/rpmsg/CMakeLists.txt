@@ -3,8 +3,6 @@
 
 cmake_minimum_required(VERSION 3.20.0)
 
-list(APPEND EXTRA_CONF_FILE ${CMAKE_CURRENT_LIST_DIR}/../../common/amp.conf)
-
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(rpi4_amp_rpmsg)
 

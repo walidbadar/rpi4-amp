@@ -1,35 +1,19 @@
 # SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
 # SPDX-License-Identifier: Apache-2.0
 #
-# Boot Linux on cores 0-2 and Zephyr on core 3 of the Raspberry Pi 4.
+# Boot Linux on cores 0-2 of the Raspberry Pi 4 and leave core 3 parked in
+# the firmware's spin-table loop for the rpi4_amp_rproc remoteproc driver.
+# nr_cpus=3 keeps Linux away from core 3's release address.
 #
-# Zephyr is loaded into memory hidden from Linux and its entry point is
-# written to core 3's spin-table release address. Core 3 leaves the
-# firmware's wfe loop on the first sev Linux issues while releasing
-# cpu1, after Linux has set up the GIC distributor. nr_cpus=3 keeps
-# Linux away from core 3's release address.
+# The memory for core 3 sits above the CMA alloc-range (0x0-0x30000000) of
+# the firmware's devicetree and below U-Boot.
 #
-# Zephyr sits above the CMA alloc-range (0x0-0x30000000) of the
-# firmware's devicetree and below U-Boot.
-#
-# Optional variables:
-#   amp_linux_start=1 leave core 3 parked; the rpi4_amp module starts it
-#   amp_tftp=1        fetch zephyr-amp.bin over TFTP instead of the SD card
-#   amp_extra_args    appended to the kernel command line
+# amp_extra_args is appended to the kernel command line.
 
-setenv amp_base 0x30000000
-setenv amp_release 0xf0
 setenv amp_fdt 0x0f000000
 
+# Zephyr's console, read with linux/ramcon.py
 mw.b 0x30800000 0 0x10000
-if test -z "${amp_linux_start}"; then
-	if test -n "${amp_tftp}"; then
-		tftpboot ${amp_base} zephyr-amp.bin
-	else
-		load mmc 0:1 ${amp_base} zephyr-amp.bin
-	fi
-	mw.q ${amp_release} ${amp_base}
-fi
 
 # ${fdt_addr} is also U-Boot's live control devicetree: edit a copy
 fdt addr ${fdt_addr}
