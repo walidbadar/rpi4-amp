@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# Linux and Zephyr AMP on the Raspberry Pi 4
+# Linux and Zephyr Asymmetric Multiprocessing (AMP) on the Raspberry Pi 4
 
 Linux runs on cores 0-2, Zephyr on core 3. Linux starts Zephyr with remoteproc, and the two talk
 rpmsg over virtio. No hypervisor: both share the GIC-400 and the memory system, and each owns its
@@ -137,6 +137,34 @@ its own and export what it needs. On the Pi (headers and gcc come with Raspberry
     sudo linux/rproc/load.sh                  # zephyr-amp.elf in /boot/firmware
     dmesg | grep rpmsg_client_sample          # "incoming msg 100", "goodbye!"
     sudo python3 linux/ramcon.py              # Zephyr's console
+
+## Files in place
+
+The boot partition of the SD card (`mmc 0:1` in U-Boot, `/boot/firmware` in Linux); everything
+not marked new is stock Raspberry Pi OS:
+
+    bootfs/
+    ├── config.txt              arm_64bit=1, kernel=u-boot.bin, enable_uart=1 added
+    ├── cmdline.txt             unchanged; boot.scr appends nr_cpus=3
+    ├── start4.elf, fixup4.dat  firmware
+    ├── bcm2711-rpi-4-b.dtb     loaded by the firmware; boot.scr edits a copy
+    ├── overlays/
+    ├── kernel8.img             loaded by boot.scr
+    ├── initramfs8              loaded by boot.scr
+    ├── u-boot.bin              new: rpi_arm64_defconfig
+    ├── uboot.env               new: written by saveenv
+    ├── boot.scr                new: uboot/boot.cmd through scripts/mkscr.py
+    └── zephyr-amp.elf          new: apps/rpmsg, strip --strip-debug
+
+The remoteproc modules on the Pi, after `get-sources.sh` and `make`:
+
+    linux/rproc/
+    ├── cpu_rproc.c, remoteproc_core_exports.c, remoteproc_virtio_module.c
+    ├── Kbuild, Makefile, load.sh, get-sources.sh
+    ├── virtio*.c, rpmsg_*.c, remoteproc_*.c, ...   copied kernel sources (git-ignored)
+    └── virtio_ring.ko, virtio_core.ko, rpmsg_core.ko, rpmsg_ns.ko, virtio_rpmsg_bus.ko,
+        rpmsg_char.ko, rpmsg_ctrl.ko, rpmsg_tty.ko, rpmsg_client_sample.ko, remoteproc.ko,
+        rproc_virtio.ko, cpu_rproc.ko
 
 ## Limits
 
