@@ -80,17 +80,49 @@ remoteproc needs the section headers to find `.resource_table`, so strip only th
 information. In a workspace that does not list them, add the modules by hand:
 `-- -DEXTRA_ZEPHYR_MODULES="<ws>/modules/hal/cmsis;<ws>/modules/hal/libmetal;<ws>/modules/lib/open-amp;<ws>/rpi4-amp"`.
 
+## U-Boot
+
+The Pi firmware starts U-Boot instead of the kernel, and U-Boot runs `uboot/boot.cmd`. Build it
+with `rpi_arm64_defconfig`: it uses the devicetree the firmware passes in, with the `config.txt`
+overlays and the `cmdline.txt` command line, which the boot script edits. `rpi_4_defconfig` embeds
+its own devicetree instead and does not work with the script.
+
+    git clone --depth 1 --branch v2026.07 https://source.denx.de/u-boot/u-boot.git
+    cd u-boot
+    make CROSS_COMPILE=aarch64-linux-gnu- rpi_arm64_defconfig
+    make CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc)
+
+Host packages: an aarch64 cross compiler (`gcc-aarch64-linux-gnu`), `bison`, `flex`, and the
+OpenSSL and GnuTLS development headers (`libssl-dev` and `libgnutls28-dev` on Debian/Ubuntu,
+`openssl-devel` and `gnutls-devel` on Fedora).
+
+Copy `u-boot.bin` to the FAT partition of the Raspberry Pi OS card and add to the `[all]` section
+of `config.txt`:
+
+    arm_64bit=1
+    kernel=u-boot.bin
+    enable_uart=1
+
+`enable_uart=1` puts the U-Boot and Linux console on the GPIO 14/15 serial pins (115200 baud).
+Delete the `kernel=` line to boot Raspberry Pi OS directly again.
+
 ## Linux side
 
-Target: Raspberry Pi OS (64-bit) with `kernel=u-boot.bin` in `config.txt`. The boot script loads
-`kernel8.img` and `initramfs8` from the FAT partition (`mmc 0:1`) and uses the devicetree and
-command line the firmware passes in `${fdt_addr}`.
+Target: Raspberry Pi OS (64-bit) with U-Boot as above. The boot script loads `kernel8.img` and
+`initramfs8` from the FAT partition (`mmc 0:1`) and uses the devicetree and command line the
+firmware passes in `${fdt_addr}`.
 
     python3 scripts/mkscr.py uboot/boot.cmd boot.scr
 
 Copy `boot.scr` and `zephyr-amp.elf` to the FAT partition, then at the U-Boot prompt:
 
     load mmc 0:1 ${scriptaddr} boot.scr; source ${scriptaddr}
+
+To run it on every boot, store it as the boot command (U-Boot keeps its environment in
+`uboot.env` on the FAT partition):
+
+    setenv bootcmd 'load mmc 0:1 ${scriptaddr} boot.scr; source ${scriptaddr}'
+    saveenv
 
 `amp_extra_args` is appended to the kernel command line; for a root shell on the serial console
 without a login: `setenv amp_extra_args "init=/bin/bash console=ttyS0,115200"`.
