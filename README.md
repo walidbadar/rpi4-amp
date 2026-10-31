@@ -34,10 +34,26 @@ enough: Linux still prepares every possible CPU and core 3 would end up in the k
 pen.) The script also adds the reserved memory and a `zephyr-amp` node to the firmware's
 devicetree, on a copy: `${fdt_addr}` is U-Boot's live control devicetree.
 
-`linux/rproc/rpi4_amp_rproc.c` binds to `zephyr-amp`, loads the Zephyr ELF into the reserved
-memory, writes its entry point to `0xf0` and wakes core 3 with `sev`. Zephyr comes up after
+`linux/rproc/cpu_rproc.c` binds to that node, loads the Zephyr ELF into the reserved memory,
+writes its entry point to the CPU's release address and wakes it with `sev`. Zephyr comes up after
 Linux has set up the GIC distributor, and `CONFIG_GIC_SAFE_CONFIG` makes it leave the distributor
 as it is.
+
+The driver has nothing specific to the Pi 4: any arm64 SoC with a spin-table CPU and a GICv2 can
+use it. Everything comes from the node:
+
+    zephyr-amp {
+        compatible = "amp,cpu-rproc";
+        cpus = <&cpu3>;
+        memory-region = <&image>, <&vdev0vring0>, <&vdev0vring1>, <&vdev0buffer>;
+        interrupts = <GIC_SPI 221 IRQ_TYPE_EDGE_RISING>,    /* remote CPU to Linux */
+                     <GIC_SPI 220 IRQ_TYPE_EDGE_RISING>;    /* Linux to remote CPU */
+        firmware-name = "zephyr-amp.elf";
+    };
+
+Carveouts are named after their reserved-memory nodes, all `no-map`; `vdev0buffer` is a
+`shared-dma-pool` for the rpmsg buffers. The kick is routed to the GIC CPU interface numbered by
+the CPU's MPIDR Aff0.
 
 Notifications use two SPIs that no device drives, through the `zephyr,mbox-gic-sw` mailbox:
 Linux sets SPI 220 pending for core 3, Zephyr sets SPI 221 pending for Linux. The shared memory is

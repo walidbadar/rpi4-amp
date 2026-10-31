@@ -21,4 +21,4 @@ rproc_virtio-y := remoteproc_virtio.o remoteproc_virtio_module.o
 CFLAGS_remoteproc_virtio.o += \
 	-Ddma_declare_coherent_memory=rproc_virtio_declare_coherent_memory \
 	-Ddma_release_coherent_memory=rproc_virtio_release_coherent_memory
-obj-m += rpi4_amp_rproc.o
+obj-m += cpu_rproc.o
