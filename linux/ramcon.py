@@ -21,8 +21,8 @@ def main():
         os.close(fd)
 
     # /dev/mem maps memory hidden from Linux as Device memory: aligned 32-bit reads only
-    words = memoryview(mem).cast("I")
-    buf = b"".join(w.to_bytes(4, "little") for w in words)
+    with memoryview(mem) as view, view.cast("I") as words:
+        buf = b"".join(w.to_bytes(4, "little") for w in words)
     mem.close()
 
     sys.stdout.write(buf.replace(b"\0", b"").decode(errors="replace"))
