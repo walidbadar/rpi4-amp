@@ -7,4 +7,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(rpi4_amp_rpmsg)
 
 target_include_directories(app PRIVATE ${LIBMETAL_INCLUDE_DIR} ${OPENAMP_INCLUDE_DIR} ${PLATFORM_DIR})
-target_sources(app PRIVATE src/main_remote.c src/ram_log.c)
+target_sources(app PRIVATE src/main_remote.c)

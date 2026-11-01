@@ -24,11 +24,11 @@
 		device_type = "memory";
 	};
 
+	/* No zephyr,memory-attr: the RAM console maps the region itself */
 	amp_ram_console: memory@30800000 {
 		compatible = "zephyr,memory-region";
 		reg = <0x30800000 DT_SIZE_K(64)>;
 		zephyr,memory-region = "RAM_CONSOLE";
-		zephyr,memory-attr = <DT_MEM_ARM64_MMU_NORMAL_NC>;
 	};
 
 	amp_ipc_shm: memory@30900000 {

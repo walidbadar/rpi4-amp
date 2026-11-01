@@ -12,9 +12,6 @@
 
 setenv amp_fdt 0x0f000000
 
-# Zephyr's console, read with linux/ramcon.py
-mw.b 0x30800000 0 0x10000
-
 # ${fdt_addr} is also U-Boot's live control devicetree: edit a copy
 fdt addr ${fdt_addr}
 fdt move ${fdt_addr} ${amp_fdt} 0x20000

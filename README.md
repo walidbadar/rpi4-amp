@@ -66,18 +66,24 @@ thread stacks for arm64): it answers the kernel's `rpmsg_client_sample` and echo
 to `/dev/ttyRPMSG0`. Its overlay moves RAM to `0x30000000`, adds the console and IPC regions and
 disables every device that Linux owns (VideoCore mailbox and firmware, GPIO, UART, I2C, GENET,
 USB, RNG); `prj.conf` turns off SMP, CPU power management, power domains and PCIe.
-`CONFIG_RAM_CONSOLE` adds a trace entry to the resource table that does not build on 64-bit, so
-`src/ram_log.c` writes the console region instead.
+`CONFIG_RAM_CONSOLE` writes the console region and lists it in the resource table as a trace
+buffer, which Linux shows as `/sys/kernel/debug/remoteproc/remoteproc0/trace0`.
 
 `zephyr/`, `drivers/`, `dts/` and `modules/` make this directory a Zephyr module carrying a copy
 of the `zephyr,mbox-gic-sw` driver and binding (zephyrproject-rtos/zephyr#124185). The copy is
 used only when the Zephyr tree lacks them; delete it once the pinned Zephyr has the driver.
 
+The trace entry does not build on 64-bit in Zephyr itself, so `zephyr/patches/` carries the fix
+until it is upstream; `west patch apply` applies it and `west patch reverse` takes it out again.
+
+    west patch apply
     west build -b rpi_4b rpi4-amp/apps/rpmsg
     strip --strip-debug -o zephyr-amp.elf build/zephyr/zephyr.elf
 
 remoteproc needs the section headers to find `.resource_table`, so strip only the debug
-information. In a workspace that does not list them, add the modules by hand:
+information. In a workspace whose manifest is not this repository, point `west patch` at the
+patches with `-b <ws>/rpi4-amp/zephyr/patches -l <ws>/rpi4-amp/zephyr/patches.yml`, and if the
+workspace does not list them, add the modules by hand:
 `-- -DEXTRA_ZEPHYR_MODULES="<ws>/modules/hal/cmsis;<ws>/modules/hal/libmetal;<ws>/modules/lib/open-amp;<ws>/rpi4-amp"`.
 
 ## U-Boot
@@ -136,7 +142,7 @@ its own and export what it needs. On the Pi (headers and gcc come with Raspberry
     make -C linux/rproc
     sudo linux/rproc/load.sh                  # zephyr-amp.elf in /boot/firmware
     dmesg | grep rpmsg_client_sample          # "incoming msg 100", "goodbye!"
-    sudo python3 linux/ramcon.py              # Zephyr's console
+    sudo cat /sys/kernel/debug/remoteproc/remoteproc0/trace0    # Zephyr's console
 
 ## Files in place
 
