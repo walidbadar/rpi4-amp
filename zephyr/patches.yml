@@ -9,6 +9,7 @@ patches:
     email: walid.badar@gmail.com
     date: 2026-11-01
     upstreamable: true
+    merge-pr: https://github.com/zephyrproject-rtos/zephyr/pull/124196
     comments: |
       CONFIG_RAM_CONSOLE does not build on 64-bit with CONFIG_OPENAMP_RSC_TABLE.
       apps/rpmsg needs it for the remoteproc trace buffer. Drop once upstream.
