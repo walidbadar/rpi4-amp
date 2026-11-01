@@ -5,6 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # Linux and Zephyr Asymmetric Multiprocessing (AMP) on the Raspberry Pi 4
 
+![The BCM2711's four Cortex-A72 cores: Linux on cores 0-2, Zephyr on core 3](doc/cover.png)
+
 Linux runs on cores 0-2, Zephyr on core 3. Linux starts Zephyr with remoteproc, and the two talk
 rpmsg over virtio. No hypervisor: both share the GIC-400 and the memory system, and each owns its
 own peripherals.
@@ -186,3 +188,7 @@ The remoteproc modules on the Pi, after `get-sources.sh` and `make`:
 The kernel code in `linux/rproc/` is GPL-2.0-only, as Linux requires for a module; the kernel
 sources `get-sources.sh` copies keep their own licenses. `apps/rpmsg/src/main_remote.c` is
 Zephyr's sample under its original copyright. Everything else is Apache-2.0.
+
+`doc/cover.png` uses Tux by Larry Ewing, created with The GIMP, and the Zephyr logo. Linux is a
+registered trademark of Linus Torvalds. Zephyr and the Zephyr logo are trademarks of The Linux
+Foundation.
