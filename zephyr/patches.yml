@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Muhammad Waleed Badar
+# SPDX-License-Identifier: Apache-2.0
+
+patches:
+  - path: zephyr/0001-ipc-open-amp-fix-the-RAM-console-trace-entry-on-64-b.patch
+    sha256sum: d2d67f597921667c675d4494569deaa17d41d7c278a17b54429eb50b5034b68c
+    module: zephyr
+    author: Muhammad Waleed Badar
+    email: walid.badar@gmail.com
+    date: 2026-11-01
+    upstreamable: true
+    comments: |
+      CONFIG_RAM_CONSOLE does not build on 64-bit with CONFIG_OPENAMP_RSC_TABLE.
+      apps/rpmsg needs it for the remoteproc trace buffer. Drop once upstream.

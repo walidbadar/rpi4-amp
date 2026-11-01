@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muhammad Waleed Badar <walid.badar@gmail.com>
+Date: Sun, 1 Nov 2026 06:08:20 +0500
+Subject: [PATCH] ipc: open-amp: fix the RAM console trace entry on 64-bit
+
+The trace entry's device address is (uint32_t)ram_console_buf, which is
+not a constant expression on 64-bit targets, so resource_table.c fails
+to build there. Take the address from the zephyr,ram-console region
+instead and assert that it fits the 32-bit field. 64-bit targets
+without that region get an error naming it; 32-bit targets are
+unchanged.
+
+Assisted-by: Claude:claude-opus-5.5
+Signed-off-by: Muhammad Waleed Badar <walid.badar@gmail.com>
+---
+ subsys/ipc/open-amp/resource_table.c |  5 +++++
+ subsys/ipc/open-amp/resource_table.h | 11 ++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/subsys/ipc/open-amp/resource_table.c b/subsys/ipc/open-amp/resource_table.c
+index 65a47897a39..affeeae0825 100644
+--- a/subsys/ipc/open-amp/resource_table.c
++++ b/subsys/ipc/open-amp/resource_table.c
+@@ -35,6 +35,11 @@
+ BUILD_ASSERT(sizeof(struct fw_resource_table) <= RSC_TABLE_SIZE);
+ #endif
+ 
++#ifdef CONFIG_RAM_CONSOLE_BUFFER_SECTION
++BUILD_ASSERT(DT_REG_ADDR(DT_CHOSEN(zephyr_ram_console)) <= UINT32_MAX,
++	     "The trace entry holds a 32-bit device address");
++#endif
++
+ extern char ram_console_buf[];
+ 
+ #define __resource Z_GENERIC_SECTION(.resource_table)
+diff --git a/subsys/ipc/open-amp/resource_table.h b/subsys/ipc/open-amp/resource_table.h
+index 54a077d3227..3ae482e8eb6 100644
+--- a/subsys/ipc/open-amp/resource_table.h
++++ b/subsys/ipc/open-amp/resource_table.h
+@@ -86,10 +86,19 @@ struct fw_resource_table {
+ #endif
+ 
+ #if defined(CONFIG_RAM_CONSOLE)
++	#if defined(CONFIG_RAM_CONSOLE_BUFFER_SECTION)
++		/* The console writes there, and the address is a constant on 64-bit too */
++		#define CM_TRACE_DA	DT_REG_ADDR(DT_CHOSEN(zephyr_ram_console))
++	#elif defined(CONFIG_64BIT)
++		#error "RAM console trace entry needs a zephyr,ram-console chosen node on 64-bit"
++	#else
++		#define CM_TRACE_DA	(uint32_t)ram_console_buf
++	#endif
++
+ 	#define CM_TRACE_ENTRY							\
+ 		.cm_trace = {							\
+ 			RSC_TRACE,						\
+-			(uint32_t)ram_console_buf, CONFIG_RAM_CONSOLE_BUFFER_SIZE, 0,\
++			CM_TRACE_DA, CONFIG_RAM_CONSOLE_BUFFER_SIZE, 0,		\
+ 			"Zephyr_log",						\
+ 		},
+ #else
